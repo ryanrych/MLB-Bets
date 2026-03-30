@@ -1,6 +1,13 @@
+from datetime import datetime, timezone
+
 import requests
 
 BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
+
+
+def is_today(iso_time: str) -> bool:
+    dt = datetime.fromisoformat(iso_time.replace("Z", "+00:00"))
+    return dt.date() == datetime.now(timezone.utc).date()
 
 
 def fetch_all_open_markets():
@@ -26,7 +33,7 @@ def fetch_all_open_markets():
         if not cursor:
             break
 
-    return all_markets
+    return [m for m in all_markets if is_mlb_moneyline_market(m)]
 
 
 def is_mlb_moneyline_market(market):
@@ -50,20 +57,11 @@ def is_mlb_moneyline_market(market):
 
 def main():
     markets = fetch_all_open_markets()
-    mlb_moneylines = [m for m in markets if is_mlb_moneyline_market(m)]
 
-    print(f"Found {len(mlb_moneylines)} MLB moneyline markets\n")
+    print(f"Found {len(markets)} MLB moneyline markets\n")
 
-    for m in mlb_moneylines:
-        print(f"Ticker:       {m.get('ticker')}")
-        print(f"Event Ticker: {m.get('event_ticker')}")
-        print(f"Title:        {m.get('title')}")
-        print(f"Status:       {m.get('status')}")
-        print(f"Yes Bid:      {m.get('yes_bid_dollars')}")
-        print(f"Yes Ask:      {m.get('yes_ask_dollars')}")
-        print(f"Volume:       {m.get('volume_fp')}")
-        print(f"Close Time:   {m.get('close_time')}")
-        print("-" * 60)
+    for m in markets:
+        print(m)
 
 
 if __name__ == "__main__":
