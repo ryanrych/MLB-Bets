@@ -1,6 +1,13 @@
+import os
+import uuid
+import base64
 from datetime import datetime, timezone
 
 import requests
+from dotenv import load_dotenv
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+
 
 BASE_URL = "https://api.elections.kalshi.com/trade-api/v2"
 
@@ -62,6 +69,45 @@ def main():
 
     for m in markets:
         print(m)
+
+
+def create_signature(private_key, timestamp, method, path):
+    message = f"{timestamp}{method}{path}".encode("utf-8")
+
+    signature = private_key.sign(
+        message,
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.DIGEST_LENGTH
+        ),
+        hashes.SHA256()
+    )
+
+    return base64.b64encode(signature).decode("utf-8")
+
+
+def buy(private_key, api_key_id, path, data, base_url=BASE_URL):
+    """Make an authenticated POST request to the Kalshi API."""
+    timestamp = str(int(datetime.now(timezone.utc).timestamp() * 1000))
+    signature = create_signature(private_key, timestamp, "POST", path)
+
+    headers = {
+        'KALSHI-ACCESS-KEY': api_key_id,
+        'KALSHI-ACCESS-SIGNATURE': signature,
+        'KALSHI-ACCESS-TIMESTAMP': timestamp,
+        'Content-Type': 'application/json'
+    }
+
+    return requests.post(base_url + path, headers=headers, json=data)
+
+
+def load_private_key(path):
+    with open(path, "rb") as f:
+        private_key = serialization.load_pem_private_key(
+            f.read(),
+            password=None  # change if your key has a password
+        )
+    return private_key
 
 
 if __name__ == "__main__":
