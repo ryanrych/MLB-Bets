@@ -89,7 +89,8 @@ def create_signature(private_key, timestamp, method, path):
 def buy(private_key, api_key_id, path, data, base_url=BASE_URL):
     """Make an authenticated POST request to the Kalshi API."""
     timestamp = str(int(datetime.now(timezone.utc).timestamp() * 1000))
-    signature = create_signature(private_key, timestamp, "POST", path)
+    signed_path = "/trade-api/v2" + path
+    signature = create_signature(private_key, timestamp, "POST", signed_path)
 
     headers = {
         'KALSHI-ACCESS-KEY': api_key_id,
