@@ -10,7 +10,7 @@ from kalshi import fetch_all_open_markets, buy, load_private_key
 
 load_dotenv()
 api_key = os.getenv("API_KEY")
-private_key = load_private_key("Jameson1.pem")
+private_key = load_private_key("./MLB-Bets/Work.pem")
 
 
 def convert_name_to_kalshi(team):
@@ -53,25 +53,15 @@ for game in games:
             print(f"Market: {market['ticker']}")
             print(f"YES ask: {market['yes_ask_dollars']}")
 
-            # --- PLACE BET (SAFE PLACEHOLDER) ---
-            order = {
-                "ticker": market["ticker"],
-                "side": "yes",  # or "nojnh" depending on your strategy
-                "price": market["yes_ask_dollars"],
-                "size": 1,  # number of contracts
-            }
-
-            print("Would place order:", order)
-
             print("\nPlacing order...")
             client_order_id = str(uuid.uuid4())
             order_data = {
-                "ticker": market['ticker'],
+                "ticker": market["ticker"],
                 "action": "buy",
                 "side": "yes",
                 "count": 1,
                 "type": "limit",
-                "yes_price": 10,
+                "yes_price_dollars": market["yes_ask_dollars"],
                 "client_order_id": client_order_id
             }
 
