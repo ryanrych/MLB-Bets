@@ -2,6 +2,7 @@ import os
 import uuid
 from datetime import datetime
 
+import pymysql
 from dotenv import load_dotenv
 
 from mlb import find_series_sweep_opportunities
@@ -10,7 +11,39 @@ from kalshi import fetch_all_open_markets, buy, load_private_key
 
 load_dotenv()
 api_key = os.getenv("API_KEY")
-private_key = load_private_key("./MLB-Bets/Work.pem")
+private_key = load_private_key("./Jameson1.pem")
+host = os.getenv("HOST")
+user = os.getenv("USER")
+password = os.getenv("PASSWORD")
+database = os.getenv("DATABASE")
+
+
+def get_bet_amount():
+
+    connection = pymysql.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=database
+    )
+    cursor = connection.cursor()
+
+    query = """
+    SELECT
+        unit_size
+    FROM
+        unit_size
+    ORDER BY 
+        id DESC
+    LIMIT
+        1
+    """
+    cursor.execute(query)
+
+    cursor.close()
+    connection.close()
+
+    return cursor.fetchall()[0][0]
 
 
 def convert_name_to_kalshi(team):
@@ -37,8 +70,13 @@ def convert_name_to_kalshi(team):
         return tokenized[0]
 
 
-games = find_series_sweep_opportunities("2026-03-29")
+bet_amount = float(get_bet_amount())
+
+games = find_series_sweep_opportunities("2026-04-05")
 print("games loaded")
+print(games)
+print(len(games))
+print(bet_amount)
 markets = fetch_all_open_markets()
 print("markets loaded")
 for game in games:
@@ -53,15 +91,18 @@ for game in games:
             print(f"Market: {market['ticker']}")
             print(f"YES ask: {market['yes_ask_dollars']}")
 
+            price = float(market["yes_ask_dollars"])
+            count = int(bet_amount // price)
+
             print("\nPlacing order...")
             client_order_id = str(uuid.uuid4())
             order_data = {
                 "ticker": market["ticker"],
                 "action": "buy",
                 "side": "yes",
-                "count": 1,
+                "count": count,
                 "type": "limit",
-                "yes_price_dollars": market["yes_ask_dollars"],
+                "yes_price_dollars": price,
                 "client_order_id": client_order_id
             }
 
